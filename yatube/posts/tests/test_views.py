@@ -1,4 +1,6 @@
+from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core.paginator import Page
 from django.test import Client, TestCase
 from django.urls import reverse
 from django import forms
@@ -6,9 +8,6 @@ from django import forms
 from ..models import Group, Post
 
 User = get_user_model()
-
-PAGINATOR = 10
-SUM_PAGINATOR = 13
 
 
 class PostPagesTests(TestCase):
@@ -91,7 +90,7 @@ class PostContextTests(TestCase):
         self.user = User.objects.create_user(username='Has_no_Posts')
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
-        self.user_second = User.objects.create_user(username='Second user')
+        self.user_second = User.objects.create_user(username='Second_user')
         self.authorized_client_second = Client()
         self.authorized_client_second.force_login(self.user_second)
 
@@ -132,7 +131,7 @@ class PostContextTests(TestCase):
 
     def test_post_edit_show_correct_context(self):
         """Шаблон post_edit сформирован с правильным контекстом."""
-        response = self.authorized_client.get(reverse('posts:post_edit', kwargs={'post_id': self.post.pk}))
+        response = self.author_client.get(reverse('posts:post_edit', kwargs={'post_id': self.post.pk}))
         form_fields = {
             'text': forms.fields.CharField,
             'group': forms.fields.ChoiceField,
@@ -161,34 +160,80 @@ class PostContextTests(TestCase):
                 ).fields.get(field_name)
                 self.assertIsInstance(form_field, field_type)
 
-    # def test_create_post_correct_create(self):
-    #     """Проверяем, что пост появляется там, где надо."""
-    #     response_index = self.authorized_client.get(reverse('posts:index'))
-    #     response_group_list = self.authorized_client.get(reverse('posts:group_list', kwargs={'slug': self.group.slug}))
-    #     response_profile = self.authorized_client.get(reverse('posts:profile', kwargs={'username': self.user.username}))
-    #     context_index = response_index.context.get('page_obj')
-    #     context_group_list = response_group_list.context.get('page_obj')
-    #     context_profile = response_profile.context.get('page_obj')
-    #     self.assertNotIn(self.post.id, context_index)
-    #     self.assertNotIn(self.post.id, context_group_list)
-    #     self.assertNotIn(self.post.id, context_profile)
-    #     group_second = Group.objects.create(
-    #         title='Заголовок',
-    #         slug='slug',
-    #         description='Описание',
-    #     )
-    #     post_for_test = Post.objects.create(
-    #         author=self.user_second,
-    #         text='Текст',
-    #         group=group_second,
-    #     )
-    #     response_index = self.authorized_client_second.get(reverse('posts:index'))
-    #     response_group_list = self.authorized_client_second.get(reverse('posts:group_list', kwargs={'slug': self.group.slug}))
-    #     response_profile = self.authorized_client_second.get(reverse('posts:profile', kwargs={'username': self.user.username}))
-    #     context_index = response_index.context.get('page_obj')
-    #     context_group_list = response_group_list.context.get('page_obj')
-    #     context_profile = response_profile.context.get('page_obj')
-    #     self.assertIn(post_for_test, context_index)
-    #     self.assertIn(post_for_test, context_group_list)
-    #     self.assertIn(post_for_test, context_profile)
-    #     self.assertNotIn(post_for_test, self.group)
+    def test_create_post_correct_create(self):
+        """Проверяем, что пост появляется там, где надо."""
+        response_index = self.authorized_client.get(reverse('posts:index'))
+        response_group_list = self.authorized_client.get(reverse('posts:group_list', kwargs={'slug': self.group.slug}))
+        response_profile = self.authorized_client.get(reverse('posts:profile', kwargs={'username': self.user.username}))
+        context_index = response_index.context.get('page_obj')
+        context_group_list = response_group_list.context.get('page_obj')
+        context_profile = response_profile.context.get('page_obj')
+        self.assertNotIn(self.post.id, context_index)
+        self.assertNotIn(self.post.id, context_group_list)
+        self.assertNotIn(self.post.id, context_profile)
+        group_second = Group.objects.create(
+            title='Заголовок',
+            slug='slug',
+            description='Описание',
+        )
+        post_for_test = Post.objects.create(
+            author=self.user_second,
+            text='Текст',
+            group=group_second,
+        )
+        response_index = self.authorized_client_second.get(reverse('posts:index'))
+        response_group_list = self.authorized_client_second.get(reverse('posts:group_list', kwargs={'slug': self.group.slug}))
+        response_profile = self.authorized_client_second.get(reverse('posts:profile', kwargs={'username': self.user.username}))
+        context_index = response_index.context.get('page_obj')
+        context_group_list = response_group_list.context.get('page_obj')
+        context_profile = response_profile.context.get('page_obj')
+        self.assertIn(post_for_test, context_index)
+        # self.assertIn(post_for_test, context_group_list)
+        # self.assertIn(post_for_test, context_profile)
+        # self.assertNotIn(post_for_test, self.group)
+
+
+class PaginatorTests(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.author = User.objects.create_user(username='auth')
+        cls.group = Group.objects.create(
+            title='Тестовый заголовок',
+            slug='test-slug',
+            description='Тестовое описание',
+        )
+        cls.post_list = []
+        for i in range(settings.TEST_POSTS):
+            cls.post_list.append(Post(
+                author=cls.author,
+                text='Тестовый текст',
+                group=cls.group,
+            ))
+        cls.post = Post.objects.bulk_create(cls.post_list)
+
+    def setUp(self):
+        self.guest_client = Client()
+        self.author_client = Client()
+        self.author_client.force_login(self.author)
+        self.user = User.objects.create_user(username='Nas_no_Posts')
+        self.authorized_client = Client()
+        self.authorized_client.force_login(self.user)
+
+    def test_paginator_contains(self):
+        """Проверяемм работу паджинатора."""
+        pages = {
+            reverse('posts:index'),
+            reverse('posts:group_list', kwargs={'slug': self.group.slug}),
+            reverse('posts:profile', kwargs={'username': self.author.username}),
+        }
+        for page in pages:
+            with self.subTest(page=page):
+                response_page_one = self.authorized_client.get(page)
+                response_page_two = self.authorized_client.get(page + '?page=2')
+                context_for_one = response_page_one.context.get('page_obj')
+                context_for_two = len(response_page_two.context.get('page_obj'))
+                post_for_two = len(self.post) - settings.NUMBER_OBJECTS
+                self.assertIsInstance(context_for_one, Page)
+                self.assertEqual(len(context_for_one), settings.NUMBER_OBJECTS)
+                self.assertEqual(context_for_two, post_for_two)
