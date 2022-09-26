@@ -37,8 +37,12 @@ class PostPagesTests(TestCase):
         """View-функции используют соответствующий шаблон."""
         templates_page_names = {
             reverse('posts:index'): 'posts/index.html',
-            reverse('posts:group_list', kwargs={'slug': self.group.slug}): 'posts/group_list.html',
-            reverse('posts:profile', kwargs={'username': self.user.username}): 'posts/profile.html',
+            reverse(
+                'posts:group_list',
+                kwargs={'slug': self.group.slug}): 'posts/group_list.html',
+            reverse(
+                'posts:profile',
+                kwargs={'username': self.user.username}): 'posts/profile.html',
             reverse(
                 'posts:post_detail',
                 kwargs={'post_id': self.post.pk}): 'posts/post_detail.html',
@@ -151,8 +155,10 @@ class PostContextTests(TestCase):
     def test_post_edit_show_correct_context(self):
         """Шаблон post_edit сформирован с правильным контекстом."""
         response = self.author_client.get(
-            reverse('posts:post_edit',
-            kwargs={'post_id': self.post.pk})
+            reverse(
+                'posts:post_edit',
+                kwargs={'post_id': self.post.pk}
+            )
         )
         form_fields = {
             'text': forms.fields.CharField,
@@ -186,12 +192,16 @@ class PostContextTests(TestCase):
         """Проверяем, что пост появляется там, где надо."""
         response_index = self.authorized_client.get(reverse('posts:index'))
         response_group_list = self.authorized_client.get(
-            reverse('posts:group_list',
-            kwargs={'slug': self.group.slug})
+            reverse(
+                'posts:group_list',
+                kwargs={'slug': self.group.slug}
+            )
         )
         response_profile = self.authorized_client.get(
-            reverse('posts:profile',
-            kwargs={'username': self.user.username})
+            reverse(
+                'posts:profile',
+                kwargs={'username': self.user.username}
+            )
         )
         context_index = response_index.context.get('page_obj')
         context_group_list = response_group_list.context.get('page_obj')
