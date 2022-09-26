@@ -57,7 +57,8 @@ class PostPagesTests(TestCase):
         template_name = {
             reverse(
                 'posts:post_edit',
-                kwargs={'post_id': f'{int(PostPagesTests.post.pk)}'}): 'posts/create_post.html',
+                kwargs={'post_id': f'{int(PostPagesTests.post.pk)}'}
+            ): 'posts/create_post.html',
         }
         for reverse_name, templates in template_name.items():
             with self.subTest(reverse_name=reverse_name):
