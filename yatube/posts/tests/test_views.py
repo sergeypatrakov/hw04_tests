@@ -21,7 +21,7 @@ class PostPagesTests(TestCase):
             description='Тестовое описание',
         )
         cls.post = Post.objects.create(
-            author = cls.author,
+            author=cls.author,
             text='Тестовый текст',
         )
 
@@ -188,60 +188,6 @@ class PostContextTests(TestCase):
                     'form'
                 ).fields.get(field_name)
                 self.assertIsInstance(form_field, field_type)
-
-    def test_create_post_correct_create(self):
-        """Проверяем, что пост появляется там, где надо."""
-        response_index = self.authorized_client.get(reverse('posts:index'))
-        response_group_list = self.authorized_client.get(
-            reverse(
-                'posts:group_list',
-                kwargs={'slug': self.group.slug}
-            )
-        )
-        response_profile = self.authorized_client.get(
-            reverse(
-                'posts:profile',
-                kwargs={'username': self.user.username}
-            )
-        )
-        context_index = response_index.context.get('page_obj')
-        context_group_list = response_group_list.context.get('page_obj')
-        context_profile = response_profile.context.get('page_obj')
-        self.assertNotIn(self.post.id, context_index)
-        self.assertNotIn(self.post.id, context_group_list)
-        self.assertNotIn(self.post.id, context_profile)
-        group_second = Group.objects.create(
-            title='Заголовок',
-            slug='slug',
-            description='Описание',
-        )
-        post_for_test = Post.objects.create(
-            author=self.user_second,
-            text='Текст',
-            group=group_second,
-        )
-        response_index = self.authorized_client_second.get(
-            reverse('posts:index')
-        )
-        response_group_list = self.authorized_client_second.get(
-            reverse(
-                'posts:group_list',
-                kwargs={'slug': self.group.slug}
-            )
-        )
-        response_profile = self.authorized_client_second.get(
-            reverse(
-                'posts:profile',
-                kwargs={'username': self.user.username}
-            )
-        )
-        context_index = response_index.context.get('page_obj')
-        context_group_list = response_group_list.context.get('page_obj')
-        context_profile = response_profile.context.get('page_obj')
-        self.assertIn(post_for_test, context_index)
-        # self.assertIn(post_for_test, context_group_list)
-        # self.assertIn(post_for_test, context_profile)
-        # self.assertNotIn(post_for_test, self.group)
 
 
 class PaginatorTests(TestCase):

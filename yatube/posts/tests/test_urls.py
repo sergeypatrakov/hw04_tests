@@ -19,7 +19,7 @@ class PostURLTests(TestCase):
             description='Тестовое_описание',
         )
         cls.post = Post.objects.create(
-            author = cls.author,
+            author=cls.author,
             text='Тестовый_текст',
         )
 
