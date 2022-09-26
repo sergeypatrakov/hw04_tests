@@ -32,7 +32,10 @@ class PostFormTests(TestCase):
 
     def test_post_create(self):
         """Валидная форма создает запись в Post."""
-        reverse_address_profile = reverse('posts:profile', kwargs={'username': self.user.username})
+        reverse_address_profile = reverse(
+            'posts:profile',
+            kwargs={'username': self.user.username}
+        )
         reverse_address_create = reverse('posts:post_create')
         post_count = Post.objects.count()
         form_data = {
@@ -58,8 +61,14 @@ class PostFormTests(TestCase):
 
     def test_post_edit(self):
         """Проверяем, что происходит изменение поста."""
-        reverse_address_profile = reverse('posts:post_detail', kwargs={'post_id': self.post.pk})
-        reverse_address_edit = reverse('posts:post_edit', kwargs={'post_id': self.post.pk})
+        reverse_address_profile = reverse(
+            'posts:post_detail',
+            kwargs={'post_id': self.post.pk}
+        )
+        reverse_address_edit = reverse(
+            'posts:post_edit',
+            kwargs={'post_id': self.post.pk}
+        )
         post_id = Post.objects.get(id=self.post.pk).text
         form_data = {
             'text': 'Тестовый текст',
@@ -71,4 +80,4 @@ class PostFormTests(TestCase):
             follow=True,
         )
         self.assertEqual(post_id, 'Тестовый текст')
-        self.assertRedirects(response,reverse_address_profile)
+        self.assertRedirects(response, reverse_address_profile)

@@ -14,13 +14,13 @@ class PostURLTests(TestCase):
         super().setUpClass()
         cls.author = User.objects.create_user(username='auth')
         cls.group = Group.objects.create(
-            title='Тестовый Заголовок',
+            title='Тестовый_заголовок',
             slug='test-slug',
-            description='Тестовое описание',
+            description='Тестовое_описание',
         )
         cls.post = Post.objects.create(
             author = cls.author,
-            text='Тестовый текст',
+            text='Тестовый_текст',
         )
 
     def setUp(self):
