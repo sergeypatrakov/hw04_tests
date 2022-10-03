@@ -1,13 +1,10 @@
 from django.conf import settings
-from django.contrib.auth import get_user_model
 from django.core.paginator import Page
 from django.test import Client, TestCase
 from django.urls import reverse
 from django import forms
 
-from ..models import Group, Post
-
-User = get_user_model()
+from ..models import Group, Post, User
 
 
 class PostPagesTests(TestCase):
@@ -26,12 +23,29 @@ class PostPagesTests(TestCase):
         )
 
     def setUp(self):
-        self.guest_client = Client()
         self.author_client = Client()
         self.author_client.force_login(self.author)
         self.user = User.objects.create_user(username='Has_no_Posts')
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
+        self.REVERSE_ADDRESS_INDEX = reverse(
+            'posts:index'
+        )
+        self.REVERSE_ADDRESS_GROUP = reverse(
+            'posts:group_list', args=[self.group.slug]
+        )
+        self.REVERSE_ADDRESS_PROFILE = reverse(
+            'posts:profile', args=[self.user.username]
+        )
+        self.REVERSE_ADDRESS_CREATE = reverse(
+            'posts:post_create'
+        )
+        self.REVERSE_ADDRESS_EDIT = reverse(
+            'posts:post_edit', args=[self.post.pk]
+        )
+        self.REVERSE_ADDRESS_DETAIL = reverse(
+            'posts:post_detail', args=[self.post.pk]
+        )
 
     def test_pages_uses_correct_template(self):
         """View-функции используют соответствующий шаблон."""
@@ -49,7 +63,7 @@ class PostPagesTests(TestCase):
         }
         for reverse_name, templates in templates_page_names.items():
             with self.subTest(reverse_name=reverse_name):
-                response = self.guest_client.get(reverse_name)
+                response = self.client.get(reverse_name)
                 self.assertTemplateUsed(response, templates)
 
     def test_view_post_edit_uses_correct_template(self):
@@ -93,15 +107,11 @@ class PostContextTests(TestCase):
         )
 
     def setUp(self):
-        self.guest_client = Client()
         self.author_client = Client()
         self.author_client.force_login(self.author)
         self.user = User.objects.create_user(username='Has_no_Posts')
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
-        self.user_second = User.objects.create_user(username='Second_user')
-        self.authorized_client_second = Client()
-        self.authorized_client_second.force_login(self.user_second)
 
     def test_index_show_correct_context(self):
         """Шаблон index сформирован с правильным контекстом."""
@@ -153,6 +163,29 @@ class PostContextTests(TestCase):
         self.assertEqual(post_text, self.post.text)
         self.assertEqual(post_group, self.post.group)
 
+class PostContextTests(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.author = User.objects.create_user(username='auth')
+        cls.group = Group.objects.create(
+            title='Тестовый заголовок',
+            slug='test-slug',
+            description='Тестовое описание',
+        )
+        cls.post = Post.objects.create(
+            author=cls.author,
+            text='Тестовый текст',
+            group=cls.group,
+        )
+
+    def setUp(self):
+        self.author_client = Client()
+        self.author_client.force_login(self.author)
+        self.user = User.objects.create_user(username='Has_no_Posts')
+        self.authorized_client = Client()
+        self.authorized_client.force_login(self.user)
+
     def test_post_edit_show_correct_context(self):
         """Шаблон post_edit сформирован с правильным контекстом."""
         response = self.author_client.get(
@@ -201,7 +234,7 @@ class PaginatorTests(TestCase):
             description='Тестовое описание',
         )
         cls.post_list = []
-        for i in range(settings.TEST_POSTS):
+        for _ in range(settings.TEST_POSTS):
             cls.post_list.append(Post(
                 author=cls.author,
                 text='Тестовый текст',
@@ -210,12 +243,9 @@ class PaginatorTests(TestCase):
         cls.post = Post.objects.bulk_create(cls.post_list)
 
     def setUp(self):
-        self.guest_client = Client()
         self.author_client = Client()
         self.author_client.force_login(self.author)
         self.user = User.objects.create_user(username='Nas_no_Posts')
-        self.authorized_client = Client()
-        self.authorized_client.force_login(self.user)
 
     def test_paginator_contains(self):
         """Проверяемм работу паджинатора."""
@@ -229,8 +259,8 @@ class PaginatorTests(TestCase):
         }
         for page in pages:
             with self.subTest(page=page):
-                response_one = self.authorized_client.get(page)
-                response_two = self.authorized_client.get(page + '?page=2')
+                response_one = self.author_client.get(page)
+                response_two = self.author_client.get(page + '?page=2')
                 context_one = response_one.context.get('page_obj')
                 context_two = len(response_two.context.get('page_obj'))
                 post_for_two = len(self.post) - settings.NUMBER_OBJECTS

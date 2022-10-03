@@ -1,10 +1,6 @@
-from django.contrib.auth import get_user_model
 from django.test import TestCase
 
-
-from ..models import Group, Post
-
-User = get_user_model()
+from ..models import Group, Post, User
 
 
 class PostModelTest(TestCase):
@@ -25,8 +21,28 @@ class PostModelTest(TestCase):
     def test_models_have_correct_object_names(self):
         """Проверяем, что у моделей корректно работает __str__."""
         group = PostModelTest.group
-        expected_object_name = group.title
-        self.assertEqual(expected_object_name, str(group))
+        expected_object_name_group = group.title
         post = PostModelTest.post
-        expected_object_name = post.text[:15]
-        self.assertEqual(expected_object_name, str(post))
+        expected_object_name_post = post.text[:15]
+        expected_str = {
+            post: expected_object_name_post,
+            group: expected_object_name_group,
+        }
+        for model, expected_value in expected_str.items():
+            with self.subTest(model=model):
+                self.assertEqual(expected_value, str(model))
+
+    def test_models_have_correct_verbose_names(self):
+        """Проверяем, что у моделей корректные verbose_name."""
+        post = PostModelTest.post
+        field_verbose_names = {
+            'text': 'Текст',
+            'pub_date': 'Дата публикации',
+            'author': 'Автор',
+            'group': 'Группы',
+        }
+        for field, expected_value in field_verbose_names.items():
+            with self.subTest(field=field):
+                self.assertEqual(
+                    post._meta.get_field(field).verbose_name, expected_value
+                )

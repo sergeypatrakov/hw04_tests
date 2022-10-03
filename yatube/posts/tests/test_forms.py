@@ -1,10 +1,10 @@
-from django.contrib.auth import get_user_model
+from http import HTTPStatus
+
 from django.test import Client, TestCase
 from django.urls import reverse
-from ..models import Group, Post
-from ..forms import PostForm
 
-User = get_user_model()
+from ..models import Group, Post, User
+from ..forms import PostForm
 
 
 class PostFormTests(TestCase):
@@ -29,25 +29,32 @@ class PostFormTests(TestCase):
         )
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
+        self.REVERSE_ADDRESS_PROFILE = reverse(
+            'posts:profile', args=[self.user.username]
+        )
+        self.REVERSE_ADDRESS_CREATE = reverse(
+            'posts:post_create'
+        )
+        self.REVERSE_ADDRESS_EDIT = reverse(
+            'posts:post_edit', args=[self.post.pk]
+        )
+        self.REVERSE_ADDRESS_DETAIL = reverse(
+            'posts:post_detail', args=[self.post.pk]
+        )
 
     def test_post_create(self):
         """Валидная форма создает запись в Post."""
-        reverse_address_profile = reverse(
-            'posts:profile',
-            kwargs={'username': self.user.username}
-        )
-        reverse_address_create = reverse('posts:post_create')
         post_count = Post.objects.count()
         form_data = {
             'text': 'Тестовый текст',
             'group': self.group.id,
         }
         response = self.authorized_client.post(
-            reverse_address_create,
+            self.REVERSE_ADDRESS_CREATE,
             data=form_data,
             follow=True,
         )
-        self.assertRedirects(response, reverse_address_profile)
+        self.assertRedirects(response, self.REVERSE_ADDRESS_PROFILE)
         self.assertEqual(
             Post.objects.count(),
             post_count + 1
@@ -58,26 +65,51 @@ class PostFormTests(TestCase):
                 group=self.group.id,
             ).exists()
         )
+        post = Post.objects.latest('id')
+        self.assertEqual(post.text, form_data['text'])
+        self.assertEqual(post.author, self.user)
+        self.assertEqual(post.group, self.group)
 
     def test_post_edit(self):
         """Проверяем, что происходит изменение поста."""
-        reverse_address_profile = reverse(
-            'posts:post_detail',
-            kwargs={'post_id': self.post.pk}
-        )
-        reverse_address_edit = reverse(
-            'posts:post_edit',
-            kwargs={'post_id': self.post.pk}
-        )
-        post_id = Post.objects.get(id=self.post.pk).text
+        post = Post.objects.create(
+            text='Тестовый текст',
+            author=self.author,
+            group=self.group,
+        ).text
         form_data = {
-            'text': 'Тестовый текст',
-            'group': self.group.id,
+            'text': 'Тестовый измененный текст',
+            'group': 'Тестовая новая группа',
         }
         response = self.authorized_client.post(
-            reverse_address_edit,
+            self.REVERSE_ADDRESS_EDIT,
             data=form_data,
             follow=True,
         )
-        self.assertEqual(post_id, 'Тестовый текст')
-        self.assertRedirects(response, reverse_address_profile)
+        self.assertRedirects(response, self.REVERSE_ADDRESS_DETAIL)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        post = Post.objects.latest('id')
+        self.assertTrue(post.author == self.author)
+        self.assertTrue(post.text != form_data['text'])
+        self.assertTrue(post.group_id != form_data['group'])
+
+    def test_client_do_not_create_post(self):
+        """Проверяем, что аноним не может создать пост."""
+        post_count = Post.objects.count()
+        form_data = {
+            'title': 'Тестовый заголовок',
+            'text': 'Тестовый текст',
+            'group': self.group.id,
+        }
+        response = self.client.post(
+            self.REVERSE_ADDRESS_CREATE,
+            data=form_data,
+            follow=True,
+        )
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        redirect = reverse('login') + '?next=' + self.REVERSE_ADDRESS_CREATE
+        self.assertRedirects(response, redirect)
+        self.assertEqual(
+            Post.objects.count(),
+            post_count,
+        )

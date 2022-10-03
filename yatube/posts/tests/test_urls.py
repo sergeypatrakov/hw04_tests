@@ -1,11 +1,8 @@
 from http import HTTPStatus
 
-from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 
-from ..models import Group, Post
-
-User = get_user_model()
+from ..models import Group, Post, User
 
 
 class PostURLTests(TestCase):
@@ -24,7 +21,6 @@ class PostURLTests(TestCase):
         )
 
     def setUp(self):
-        self.guest_client = Client()
         self.author_client = Client()
         self.author_client.force_login(self.author)
         self.user = User.objects.create_user(username='Has_no_Posts')
@@ -33,22 +29,22 @@ class PostURLTests(TestCase):
 
     def test_index_url_exist_at_desired_location(self):
         """Страница '/' доступна любому пользователю."""
-        response = self.guest_client.get('/')
+        response = self.client.get('/')
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_group_list_url_exist_at_desired_location(self):
         """Страница '/group/<slug>/' доступна любому пользователю."""
-        response = self.guest_client.get(f'/group/{PostURLTests.group.slug}/')
+        response = self.client.get(f'/group/{PostURLTests.group.slug}/')
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_profile_url_exist_at_desired_location(self):
         """Страница '/profile/<username>/' доступна любому пользователю."""
-        response = self.guest_client.get(f'/profile/{self.user}/')
+        response = self.client.get(f'/profile/{self.user}/')
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_post_detail_url_exist_at_desired_location(self):
         """Страница '/posts/<post_id>/' доступна любому пользователю."""
-        response = self.guest_client.get(f'/posts/{self.post.id}/')
+        response = self.client.get(f'/posts/{self.post.id}/')
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_post_edit_url_exist_at_desired_location_author(self):
@@ -63,7 +59,7 @@ class PostURLTests(TestCase):
 
     def test_unexisting_page_has_not_found(self):
         """Страница '/unexisting_page/' не существует."""
-        response = self.guest_client.get('/unexisting_page/')
+        response = self.client.get('/unexisting_page/')
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
     def test_urls_uses_correct_template(self):
@@ -80,3 +76,66 @@ class PostURLTests(TestCase):
             with self.subTest(address=address):
                 response = self.author_client.get(address)
                 self.assertTemplateUsed(response, template)
+
+    def test_all_url_available_author(self):
+        """Все URL-адреса доступны автору."""
+        code_answer = {
+            '/': HTTPStatus.OK,
+            f'/group/{PostURLTests.group.slug}/': HTTPStatus.OK,
+            f'/profile/{self.user}/': HTTPStatus.OK,
+            f'/posts/{self.post.id}/': HTTPStatus.OK,
+            f'/posts/{self.post.id}/edit/': HTTPStatus.OK,
+            '/create/': HTTPStatus.OK,
+        }
+        for address, code in code_answer.items():
+            with self.subTest(address=address):
+                response = self.author_client.get(address)
+                self.assertEqual(response.status_code, code)
+
+    def test_all_url_available_not_author(self):
+        """Все URL-адреса доступны НЕ автору."""
+        code_answer = {
+            '/': HTTPStatus.OK,
+            f'/group/{PostURLTests.group.slug}/': HTTPStatus.OK,
+            f'/profile/{self.user}/': HTTPStatus.OK,
+            f'/posts/{self.post.id}/': HTTPStatus.OK,
+            f'/posts/{self.post.id}/edit/': HTTPStatus.FOUND,
+            '/create/': HTTPStatus.OK,
+        }
+        for address, code in code_answer.items():
+            with self.subTest(address=address):
+                response = self.authorized_client.get(address)
+                self.assertEqual(response.status_code, code)
+                response = self.authorized_client.get(
+                    f'/posts/{self.post.id}/edit/', follow=True
+                )
+                self.assertRedirects(response, f'/posts/{self.post.id}/')
+
+    def test_all_url_available_guest(self):
+        """Все URL-адреса доступны анониму."""
+        code_answer = {
+            '/': HTTPStatus.OK,
+            f'/group/{PostURLTests.group.slug}/': HTTPStatus.OK,
+            f'/profile/{self.user}/': HTTPStatus.OK,
+            f'/posts/{self.post.id}/': HTTPStatus.OK,
+            f'/posts/{self.post.id}/edit/': HTTPStatus.FOUND,
+            '/create/': HTTPStatus.FOUND, 
+        }
+        for address, code in code_answer.items():
+            with self.subTest(address=address):
+                response = self.client.get(address)
+                self.assertEqual(response.status_code, code)
+                response = self.client.get(
+                     '/create/',
+                )
+                self.assertRedirects(
+                    response,
+                    '/auth/login/?next=/create/',
+                )
+                response = self.client.get(
+                    f'/posts/{self.post.id}/edit/',
+                )
+                self.assertRedirects(
+                    response,
+                    '/auth/login/?next=%2Fposts%2F1%2Fedit%2F',
+                )
