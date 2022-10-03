@@ -163,6 +163,7 @@ class PostContextTests(TestCase):
         self.assertEqual(post_text, self.post.text)
         self.assertEqual(post_group, self.post.group)
 
+
 class PostContextTests(TestCase):
     @classmethod
     def setUpClass(cls):

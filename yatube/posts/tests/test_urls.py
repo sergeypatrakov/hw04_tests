@@ -119,14 +119,14 @@ class PostURLTests(TestCase):
             f'/profile/{self.user}/': HTTPStatus.OK,
             f'/posts/{self.post.id}/': HTTPStatus.OK,
             f'/posts/{self.post.id}/edit/': HTTPStatus.FOUND,
-            '/create/': HTTPStatus.FOUND, 
+            '/create/': HTTPStatus.FOUND,
         }
         for address, code in code_answer.items():
             with self.subTest(address=address):
                 response = self.client.get(address)
                 self.assertEqual(response.status_code, code)
                 response = self.client.get(
-                     '/create/',
+                    '/create/',
                 )
                 self.assertRedirects(
                     response,
