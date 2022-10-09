@@ -20,13 +20,11 @@ class PostModelTest(TestCase):
 
     def test_models_have_correct_object_names(self):
         """Проверяем, что у моделей корректно работает __str__."""
-        group = PostModelTest.group
-        expected_object_name_group = group.title
-        post = PostModelTest.post
-        expected_object_name_post = post.text[:15]
+        self.group = PostModelTest.group
+        self.post = PostModelTest.post
         expected_str = {
-            post: expected_object_name_post,
-            group: expected_object_name_group,
+            self.post: PostModelTest.post.text[:15],
+            self.group: PostModelTest.group.title,
         }
         for model, expected_value in expected_str.items():
             with self.subTest(model=model):
@@ -34,7 +32,7 @@ class PostModelTest(TestCase):
 
     def test_models_have_correct_verbose_names(self):
         """Проверяем, что у моделей корректные verbose_name."""
-        post = PostModelTest.post
+        self.post = PostModelTest.post
         field_verbose_names = {
             'text': 'Текст',
             'pub_date': 'Дата публикации',
@@ -44,5 +42,5 @@ class PostModelTest(TestCase):
         for field, expected_value in field_verbose_names.items():
             with self.subTest(field=field):
                 self.assertEqual(
-                    post._meta.get_field(field).verbose_name, expected_value
+                    self.post._meta.get_field(field).verbose_name, expected_value
                 )

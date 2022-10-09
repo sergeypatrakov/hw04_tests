@@ -101,6 +101,7 @@ STATIC_URL = '/static/'
 
 NUMBER_OBJECTS = 10
 TEST_POSTS = 13
+TEST_PAGINATOR = 3
 
 LOGIN_URL = 'users:login'
 LOGIN_REDIRECT_URL = 'posts:index'

@@ -24,32 +24,30 @@ class PostFormTests(TestCase):
         cls.form = PostForm()
 
     def setUp(self):
-        self.user = User.objects.create_user(
-            username='Has_no_Posts'
-        )
-        self.authorized_client = Client()
-        self.authorized_client.force_login(self.user)
+        self.author_client = Client()
+        self.author_client.force_login(self.author)
         self.REVERSE_ADDRESS_PROFILE = reverse(
-            'posts:profile', args=[self.user.username]
+            'posts:profile', args=(self.author.username,)
         )
         self.REVERSE_ADDRESS_CREATE = reverse(
             'posts:post_create'
         )
         self.REVERSE_ADDRESS_EDIT = reverse(
-            'posts:post_edit', args=[self.post.pk]
+            'posts:post_edit', args=(self.post.pk,)
         )
         self.REVERSE_ADDRESS_DETAIL = reverse(
-            'posts:post_detail', args=[self.post.pk]
+            'posts:post_detail', args=(self.post.pk,)
         )
 
     def test_post_create(self):
         """Валидная форма создает запись в Post."""
+        Post.objects.all().delete()
         post_count = Post.objects.count()
         form_data = {
             'text': 'Тестовый текст',
-            'group': self.group.id,
+            'group': PostFormTests.group.id,
         }
-        response = self.authorized_client.post(
+        response = self.author_client.post(
             self.REVERSE_ADDRESS_CREATE,
             data=form_data,
             follow=True,
@@ -62,42 +60,57 @@ class PostFormTests(TestCase):
         self.assertTrue(
             Post.objects.filter(
                 text='Тестовый текст',
-                group=self.group.id,
+                group=self.group,
             ).exists()
         )
-        post = Post.objects.latest('id')
+        post = Post.objects.first()
         self.assertEqual(post.text, form_data['text'])
-        self.assertEqual(post.author, self.user)
-        self.assertEqual(post.group, self.group)
+        self.assertEqual(post.author, self.author)
+        self.assertEqual(post.group.id, form_data['group'])
 
     def test_post_edit(self):
         """Проверяем, что происходит изменение поста."""
-        post = Post.objects.create(
-            text='Тестовый текст',
-            author=self.author,
-            group=self.group,
-        ).text
+        self.assertEqual(Post.objects.count(), 1)
+        post = Post.objects.first()
+        new_group = Group.objects.create(
+            title='Тестовый измененный заголовок',
+            slug='test-slug-fixed',
+            description='Тестовое измененное описание',
+        )
+        text_first = post.text
         form_data = {
             'text': 'Тестовый измененный текст',
-            'group': 'Тестовая новая группа',
+            'group': new_group.id,
         }
-        response = self.authorized_client.post(
+        response = self.author_client.post(
             self.REVERSE_ADDRESS_EDIT,
             data=form_data,
             follow=True,
         )
         self.assertRedirects(response, self.REVERSE_ADDRESS_DETAIL)
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        post = Post.objects.latest('id')
-        self.assertTrue(post.author == self.author)
-        self.assertTrue(post.text != form_data['text'])
-        self.assertTrue(post.group_id != form_data['group'])
+        post = Post.objects.first()
+        self.assertNotEqual(text_first, form_data['text'])
+        self.assertEqual(post.author, self.author)
+        self.assertNotEqual(post.group, form_data['group'])
+        self.assertEqual(Post.objects.count(), 1)
+        response = self.client.get('/group/test-slug/')
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        response = self.author_client.get(
+            reverse(
+                'posts:group_list',
+                args=(self.group.slug,)
+            )
+        )
+        for post in response.context.get('page_obj'):
+            self.assertTrue(False)
+            self.assertTrue
+
 
     def test_client_do_not_create_post(self):
         """Проверяем, что аноним не может создать пост."""
         post_count = Post.objects.count()
         form_data = {
-            'title': 'Тестовый заголовок',
             'text': 'Тестовый текст',
             'group': self.group.id,
         }
@@ -107,7 +120,7 @@ class PostFormTests(TestCase):
             follow=True,
         )
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        redirect = reverse('login') + '?next=' + self.REVERSE_ADDRESS_CREATE
+        redirect = reverse('users:login')+'?next='+self.REVERSE_ADDRESS_CREATE
         self.assertRedirects(response, redirect)
         self.assertEqual(
             Post.objects.count(),
