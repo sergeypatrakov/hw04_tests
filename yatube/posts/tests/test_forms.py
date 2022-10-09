@@ -106,7 +106,6 @@ class PostFormTests(TestCase):
             self.assertTrue(False)
             self.assertTrue
 
-
     def test_client_do_not_create_post(self):
         """Проверяем, что аноним не может создать пост."""
         post_count = Post.objects.count()
@@ -120,7 +119,7 @@ class PostFormTests(TestCase):
             follow=True,
         )
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        redirect = reverse('users:login')+'?next='+self.REVERSE_ADDRESS_CREATE
+        redirect = reverse('users:login') + '?next=' + self.REVERSE_ADDRESS_CREATE
         self.assertRedirects(response, redirect)
         self.assertEqual(
             Post.objects.count(),

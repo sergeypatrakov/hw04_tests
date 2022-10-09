@@ -20,11 +20,11 @@ class PostContextTests(TestCase):
             text='Тестовый текст',
             group=cls.group,
         )
- 
+
     def setUp(self):
         self.author_client = Client()
         self.author_client.force_login(self.author)
- 
+
     def check_data(self, request, is_post=False):
         response = self.author_client.get(request)
         if is_post:
@@ -37,17 +37,17 @@ class PostContextTests(TestCase):
             self.assertEqual(post_author, self.post.author)
             self.assertEqual(post_text, self.post.text)
             self.assertEqual(post_group, self.post.group)
-            return 
+            return
         response = self.author_client.get(request)
         for post in response.context.get('page_obj'):
             self.assertIsInstance(post, Post)
             self.assertEqual(post.author, self.post.author)
             self.assertEqual(post.group, self.post.group)
- 
+
     def test_index_show_correct_context(self):
         """Шаблон index сформирован с правильным контекстом."""
         self.check_data(reverse('posts:index'))
- 
+
     def test_group_posts_show_correct_context(self):
         """Шаблон group_list сформирован с правильным контекстом."""
         self.check_data(
@@ -65,7 +65,7 @@ class PostContextTests(TestCase):
                 args=(self.author.username,),
             )
         )
- 
+
     def test_post_detail_show_correct_context(self):
         """Шаблон post_detail сформирован с правильным контекстом."""
         self.check_data(
@@ -75,6 +75,7 @@ class PostContextTests(TestCase):
             ),
             True
         )
+
 
 class PaginatorTests(TestCase):
     @classmethod
@@ -107,8 +108,8 @@ class PaginatorTests(TestCase):
             reverse('posts:profile', args=(self.author.username,)),
         )
         data = (
-                ('?page=1', settings.NUMBER_OBJECTS),
-                ('?page=2', settings.TEST_PAGINATOR),
+            ('?page=1', settings.NUMBER_OBJECTS),
+            ('?page=2', settings.TEST_PAGINATOR),
         )
         for page in pages:
             with self.subTest(page=page):
