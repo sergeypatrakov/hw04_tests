@@ -61,14 +61,14 @@ class PostURLTests(TestCase):
 
     def test_all_url_available_author(self):
         """Все URL-адреса доступны автору."""
-        for _,_,url in self.name_args_templates:
+        for name, args, url in self.name_args_templates:
             with self.subTest(url=url):
                 response = self.author_client.get(url)
                 self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_all_url_available_not_author(self):
         """Все URL-адреса доступны НЕ автору."""
-        for url in self.name_args_templates:
+        for name, args, url in self.name_args_templates:
             with self.subTest(url=url):
                 response = self.authorized_client.get(url)
                 response = self.authorized_client.get(
@@ -78,7 +78,7 @@ class PostURLTests(TestCase):
 
     def test_all_url_available_guest(self):
         """Все URL-адреса доступны анониму."""
-        for url in self.name_args_templates:
+        for name, args, url in self.name_args_templates:
             with self.subTest(url=url):
                 response = self.client.get(url)
                 response = self.client.get(
