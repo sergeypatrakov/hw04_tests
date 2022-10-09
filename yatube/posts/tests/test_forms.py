@@ -119,7 +119,9 @@ class PostFormTests(TestCase):
             follow=True,
         )
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        redirect = reverse('users:login') + '?next=' + self.REVERSE_ADDRESS_CREATE
+        redirect = reverse(
+            'users:login'
+        ) + '?next=' + self.REVERSE_ADDRESS_CREATE
         self.assertRedirects(response, redirect)
         self.assertEqual(
             Post.objects.count(),
