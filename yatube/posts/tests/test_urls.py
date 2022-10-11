@@ -69,9 +69,9 @@ class PostURLTests(TestCase):
     def test_all_url_uses_correct_template(self):
         """URL-адрес использует соответствующий шаблон."""
         for name, args, url, template in self.name_args_templates:
-                with self.subTest(url=url):
-                    response = self.author_client.get(url)
-                    self.assertTemplateUsed(response, template)
+            with self.subTest(url=url):
+                response = self.author_client.get(url)
+                self.assertTemplateUsed(response, template)
 
     def test_urls_uses_correct_template(self):
         """URL-адрес использует соответствующий шаблон."""
@@ -91,7 +91,7 @@ class PostURLTests(TestCase):
         for name, args, url, template in self.name_args_templates:
             with self.subTest(url=url):
                 if name == 'post_edit':
-                    response = self.authorized_client.get( 
+                    response = self.authorized_client.get(
                         reverse(
                             'posts:post_edit',
                             args=(self.post.id,),
@@ -106,9 +106,13 @@ class PostURLTests(TestCase):
                 else:
                     response = self.authorized_client.get('')
                     self.assertEqual(response.status_code, HTTPStatus.OK)
-                    response = self.authorized_client.get(f'/group/{self.group.slug}/')
+                    response = self.authorized_client.get(
+                        f'/group/{self.group.slug}/'
+                    )
                     self.assertEqual(response.status_code, HTTPStatus.OK)
-                    response = self.authorized_client.get(f'/profile/{self.user}/')
+                    response = self.authorized_client.get(
+                        f'/profile/{self.user}/'
+                    )
                     self.assertEqual(response.status_code, HTTPStatus.OK)
                     response = self.authorized_client.get('/create/')
                     self.assertEqual(response.status_code, HTTPStatus.OK)
