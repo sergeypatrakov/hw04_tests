@@ -20,11 +20,9 @@ class PostModelTest(TestCase):
 
     def test_models_have_correct_object_names(self):
         """Проверяем, что у моделей корректно работает __str__."""
-        self.group = PostModelTest.group
-        self.post = PostModelTest.post
         expected_str = {
-            self.post: PostModelTest.post.text[:15],
-            self.group: PostModelTest.group.title,
+            self.post: self.post.text[:15],
+            self.group: self.group.title,
         }
         for model, expected_value in expected_str.items():
             with self.subTest(model=model):
@@ -32,7 +30,6 @@ class PostModelTest(TestCase):
 
     def test_models_have_correct_verbose_names(self):
         """Проверяем, что у моделей корректные verbose_name."""
-        self.post = PostModelTest.post
         field_verbose_names = {
             'text': 'Текст',
             'pub_date': 'Дата публикации',

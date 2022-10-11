@@ -32,7 +32,7 @@ class PostURLTests(TestCase):
             (
                 'group_list',
                 (self.group.slug,),
-                f'/group/{PostURLTests.group.slug}/',
+                f'/group/{self.group.slug}/',
             ),
             ('profile', (self.user,), f'/profile/{self.user}/'),
             (
@@ -53,11 +53,18 @@ class PostURLTests(TestCase):
         response = self.client.get('/unexisting_page/')
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
+    def test_all_url_uses_correct_template(self):
+        """URL-адрес использует соответствующий шаблон."""
+        for name, args, url in self.name_args_templates:
+            with self.subTest(name=name, url=url):
+                response = self.author_client.get(url)
+                self.assertEqual(response.status_code, HTTPStatus.OK)
+
     def test_urls_uses_correct_template(self):
         """URL-адрес использует соответствующий шаблон."""
-        for name, args, template in self.name_args_templates:
-            with self.subTest(name=name, template=template):
-                self.assertEqual(template, reverse(f'posts:{name}', args=args))
+        for name, args, url in self.name_args_templates:
+            with self.subTest(name=name, url=url):
+                self.assertEqual(url, reverse(f'posts:{name}', args=args))
 
     def test_all_url_available_author(self):
         """Все URL-адреса доступны автору."""
@@ -70,17 +77,28 @@ class PostURLTests(TestCase):
         """Все URL-адреса доступны НЕ автору."""
         for name, args, url in self.name_args_templates:
             with self.subTest(url=url):
-                response = self.authorized_client.get(url)
-                response = self.authorized_client.get(
-                    f'/posts/{self.post.id}/edit/', follow=True
-                )
-                self.assertRedirects(response, f'/posts/{self.post.id}/')
+                if name == 'post_edit':
+                    response = self.authorized_client.get( 
+                        reverse(
+                            'posts:post_edit',
+                            args=(self.post.id,),
+                        )
+                    )
+                    response = self.authorized_client.get(
+                        reverse(
+                            'posts:post_detail',
+                            args=(self.post.id,),
+                        )
+                    )
+                else:
+                    response = self.authorized_client.get('')
+                    self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_all_url_available_guest(self):
         """Все URL-адреса доступны анониму."""
+        reverse_login = reverse('users:login')
         for name, args, url in self.name_args_templates:
             with self.subTest(url=url):
-                response = self.client.get(url)
                 response = self.client.get(
                     '/create/',
                 )

@@ -77,7 +77,6 @@ class PostFormTests(TestCase):
             slug='test-slug-fixed',
             description='Тестовое измененное описание',
         )
-        text_first = post.text
         form_data = {
             'text': 'Тестовый измененный текст',
             'group': new_group.id,
@@ -90,21 +89,19 @@ class PostFormTests(TestCase):
         self.assertRedirects(response, self.REVERSE_ADDRESS_DETAIL)
         self.assertEqual(response.status_code, HTTPStatus.OK)
         post = Post.objects.first()
-        self.assertNotEqual(text_first, form_data['text'])
+        self.assertEqual(post.text, form_data['text'])
         self.assertEqual(post.author, self.author)
-        self.assertNotEqual(post.group, form_data['group'])
+        self.assertEqual(post.group.id, form_data['group'])
         self.assertEqual(Post.objects.count(), 1)
-        response = self.client.get('/group/test-slug/')
-        self.assertEqual(response.status_code, HTTPStatus.OK)
         response = self.author_client.get(
             reverse(
                 'posts:group_list',
                 args=(self.group.slug,)
             )
         )
-        for post in response.context.get('page_obj'):
-            self.assertTrue(False)
-            self.assertTrue
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+     #   self.assertEqual(Group.objects.filter(), 0)
+     #   I don't understand why should we to check paginator in forms
 
     def test_client_do_not_create_post(self):
         """Проверяем, что аноним не может создать пост."""
