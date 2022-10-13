@@ -30,37 +30,42 @@ class PostContextTests(TestCase):
             first_object = response.context.get('post')
         else:
             first_object = response.context.get('page_obj')[0]
-        post_author = first_object.author
-        post_text = first_object.text
-        post_group = first_object.group
-        post_pub_date = first_object.pub_date
-        self.assertEqual(post_pub_date, self.post.pub_date)
-        self.assertEqual(post_author, self.post.author)
-        self.assertEqual(post_text, self.post.text)
-        self.assertEqual(post_group, self.post.group)
+        self.assertEqual(first_object.pub_date, self.post.pub_date)
+        self.assertEqual(first_object.author, self.post.author)
+        self.assertEqual(first_object.text, self.post.text)
+        self.assertEqual(first_object.group, self.post.group)
 
     def test_index_show_correct_context(self):
         """Шаблон index сформирован с правильным контекстом."""
-        response = self.author_client.get('')
+        response = self.author_client.get(reverse('posts:index'))
         return self.check_data(response)
 
     def test_group_posts_show_correct_context(self):
         """Шаблон group_list сформирован с правильным контекстом."""
-        response = self.author_client.get(f'/group/{self.group.slug}/')
+        response = self.author_client.get(reverse(
+            'posts:group_list',
+            args=(self.group.slug,),
+        ))
         group_from_context = response.context.get('group')
         self.assertEqual(group_from_context, self.post.group)
         return self.check_data(response)
 
     def test_profile_show_correct_context(self):
         """Шаблон profile сформирован с правильным контекстом."""
-        response = self.author_client.get(f'/profile/{self.author}/')
+        response = self.author_client.get(reverse(
+            'posts:profile',
+            args=(self.author.username,),
+        ))
         author_from_context = response.context.get('author')
         self.assertEqual(author_from_context, self.post.author)
         return self.check_data(response)
 
     def test_post_detail_show_correct_context(self):
         """Шаблон post_detail сформирован с правильным контекстом."""
-        response = self.author_client.get(f'/posts/{self.post.id}/')
+        response = self.author_client.get(reverse(
+            'posts:post_detail',
+            args=(self.post.id,),
+        ))
         return self.check_data(response, is_post=True)
 
     def test_post_not_used_uncorrect_group(self):
@@ -70,7 +75,10 @@ class PostContextTests(TestCase):
             slug='test-slug-fixed',
             description='Тестовое измененное описание',
         )
-        response = self.author_client.get(f'/group/{new_group.slug}/')
+        response = self.author_client.get(reverse(
+            'posts:group_list',
+            args=(new_group.slug,),
+        ))
         page_obj = response.context.get('page_obj')
         page_obj_count = len(page_obj)
         self.assertEqual(page_obj_count, 0)

@@ -72,7 +72,6 @@ class PostFormTests(TestCase):
         """Проверяем, что происходит изменение поста."""
         self.assertEqual(Post.objects.count(), 1)
         post = Post.objects.first()
-        # old_group = Group.objects.get(pk=1)
         new_group = Group.objects.create(
             title='Тестовый измененный заголовок',
             slug='test-slug-fixed',
@@ -101,8 +100,9 @@ class PostFormTests(TestCase):
             )
         )
         self.assertEqual(response.status_code, HTTPStatus.OK)
-        # self.assertEqual(old_group.posts.count(), 0)
-        self.assertEqual(Group.objects.get(pk=1).posts.count(), 0)
+        self.assertEqual(
+            len(response.context.get('page_obj')), 0
+        )
 
     def test_client_do_not_create_post(self):
         """Проверяем, что аноним не может создать пост."""
